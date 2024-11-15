@@ -8,6 +8,7 @@ import launch_ros.parameter_descriptions
 from launch_ros.actions import Node
 import xacro
 from launch_ros.substitutions import FindPackageShare
+import time
 
 
 def generate_launch_description():
@@ -18,6 +19,8 @@ def generate_launch_description():
     xacro_file = os.path.join(pkg_project_description, 'urdf', 'amr_mani.xacro')
     robot_description_config = xacro.process_file(xacro_file) 
     robot_desc = robot_description_config.toxml()
+
+    world = os.path.join(pkg_gazebo_dir, 'world', f'{world_name}.world')
 
 
     sim_time_arg = DeclareLaunchArgument(
@@ -55,7 +58,7 @@ def generate_launch_description():
         ]),
         launch_arguments={
             'pause': LaunchConfiguration('pause_sim'),
-            'world': f'{world_name}.sdf'
+            'world': world
         }.items()
     )
 
@@ -94,6 +97,13 @@ def generate_launch_description():
         arguments=['joint_trajectory_controller', '--controller-manager', '/controller_manager']
     )
 
+    simple_base_motion_node = Node(
+        package='goal_pose_commander',
+        executable='go_to_pose_node',
+        name='go_to_pose',
+        output='screen'
+    )
+
 
     ld = LaunchDescription()
     ld.add_action(pause_sim_arg)
@@ -102,7 +112,8 @@ def generate_launch_description():
     ld.add_action(gazebo_server)
     ld.add_action(gazebo_client)
     ld.add_action(urdf_spawn_node)
-    ld.add_action(joint_broadcaster_spawner)
-    ld.add_action(joint_trajectory_spawner)
+    # ld.add_action(joint_broadcaster_spawner)
+    # ld.add_action(joint_trajectory_spawner)
+    ld.add_action(simple_base_motion_node)
 
     return ld
