@@ -52,8 +52,9 @@ def generate_launch_description():
     kinematics_file = get_package_file(moveit_config_folder_name, 'config/kinematics.yaml')
     ompl_config_file = get_package_file(moveit_config_folder_name, 'config/ompl_planning.yaml')
     moveit_controllers_file = get_package_file(moveit_config_folder_name, 'config/moveit_controllers.yaml')
-    moveit_servo_file = get_package_file(moveit_config_folder_name, "config/arm_servo.yaml")
-    ros_controllers_file = get_package_file(moveit_config_folder_name, 'config/ros_controllers.yaml')
+    moveit_servo_file = get_package_file(moveit_config_folder_name, "config/amr_mani_servo.yaml")
+    # ros_controllers_file = get_package_file(moveit_config_folder_name, 'config/ros_controllers.yaml')
+    rviz_config_file = get_package_file(moveit_config_folder_name, 'rviz/default.rviz')
 
     robot_description_semantic = load_file(srdf_file)
     kinematics_config = load_yaml(kinematics_file)
@@ -115,16 +116,6 @@ def generate_launch_description():
         output="screen",
     )
 
-    # TF information
-    robot_state_publisher_arm = Node(
-        name='robot_state_publisher',
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        output='screen',
-        parameters=[{'robot_description': robot_description_arm}],
-        remappings=[('robot_description', 'robot_description')]
-    )
-
     #  Visualization (parameters needed for MoveIt display plugin)
     rviz = Node(
         name='rviz',
@@ -139,12 +130,24 @@ def generate_launch_description():
             }
         ],
     )
+    joint_broadcaster_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager']
+    )
+
+    joint_trajectory_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['joint_trajectory_controller', '--controller-manager', '/controller_manager']
+    )
 
 
     return LaunchDescription([
-        # robot_state_publisher_arm,
         TimerAction(period=1.0, 
                     actions=[
+                            joint_broadcaster_spawner,
+                            joint_trajectory_spawner,
                             rviz,
                             move_group_node,
                             servo_node
